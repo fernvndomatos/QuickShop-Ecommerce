@@ -2,12 +2,12 @@ package dev.java.ecommerce.basketservice.service;
 
 import dev.java.ecommerce.basketservice.client.response.PlatziProductResponse;
 import dev.java.ecommerce.basketservice.controller.request.BasketRequest;
+import dev.java.ecommerce.basketservice.controller.request.PaymentRequest;
 import dev.java.ecommerce.basketservice.entity.Basket;
 import dev.java.ecommerce.basketservice.entity.Product;
 import dev.java.ecommerce.basketservice.entity.Status;
 import dev.java.ecommerce.basketservice.repository.BasketRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,17 +20,17 @@ public class BasketService {
     private final BasketRepository basketRepository;
     private final ProductService productService;
 
-    public Basket getBasketById(String id){
+    public Basket getBasketById(String id) {
         return basketRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Basket not found"));
     }
 
-    public Basket createBasket(BasketRequest basketRequest){
+    public Basket createBasket(BasketRequest basketRequest) {
 
-         basketRepository.findByClientAndStatus(basketRequest.clientId(), Status.OPEN)
-                 .ifPresent(basket ->{
-                     throw new IllegalArgumentException("There is already an open basket for this client");
-                 });
+        basketRepository.findByClientAndStatus(basketRequest.clientId(), Status.OPEN)
+                .ifPresent(basket -> {
+                    throw new IllegalArgumentException("There is already an open basket for this client");
+                });
 
         List<Product> products = new ArrayList<>();
         basketRequest.products().forEach(productRequest -> {
@@ -53,8 +53,7 @@ public class BasketService {
         return basketRepository.save(basket);
     }
 
-    public Basket updateBasket (String basketId, BasketRequest request){
-
+    public Basket updateBasket(String basketId, BasketRequest request) {
         Basket savedBasket = getBasketById(basketId);
 
         List<Product> products = new ArrayList<>();
@@ -71,4 +70,12 @@ public class BasketService {
         savedBasket.calculateTotalPrice();
         return basketRepository.save(savedBasket);
     }
+
+    public Basket payBasket(String basketId, PaymentRequest paymentRequest) {
+        Basket savedBasket = getBasketById(basketId);
+        savedBasket.setPaymentMethod(paymentRequest.getPaymentMethod());
+        savedBasket.setStatus(Status.SOLD);
+        return basketRepository.save(savedBasket);
+    }
+
 }
